@@ -5,11 +5,13 @@
     body{
         background-image: url('https://images.unsplash.com/photo-1529251333259-d36cccaf22ea?crop=entropy&cs=tinysrgb&fm=jpg&ixlib=rb-1.2.1&q=80&raw_url=true&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OXx8aGFuZHdyaXRpbmd8ZW58MHx8MHx8&w=1000');
         background-size: cover;
+        text-align: center;
     }
     .container .row .col{
         padding-left: 100px;
     }
-    .container .row .col-md-8 form{
+    .container .row .col-md-12 form{
+        height: 120%;
         background-color: rgba(39, 36, 36, 0.911);
         color: aliceblue;
     }
@@ -18,42 +20,24 @@
 {% block body %}
 <div class="container p-3">
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
             {% include "notify.html" %}
             <form class="card" method="post" enctype="multipart/form-data">
                 <div class="card-header">
-                    <p class="lead">Upload a video</p>
+                    <p class="lead" style="font-size: 50px; text-align: center;"><b>Upload a Video</b></p>
                 </div>
                 <div class="card-body">
                     <div class="form-group">
-                      <label for="imageId">Video</label>
-                      <input type="file" name="file" class="form-control-file" name="imageId" id="imageId" placeholder="browse the image" aria-describedby="imageHelp">
-                      <small id="imageHelp" class="form-text text-muted">please select a video</small>
+                      <h1 style="font-size: 100px;">+</h1>
+                      <label for="imageId" style="font-size: xx-large;">Upload Media</label>
+                      <input type="file" name="file" class="form-control-file" name="imageId" id="imageId" placeholder="browse the image" aria-describedby="imageHelp" style="text-align: center;">
+                      <small id="imageHelp" class="form-text text-muted">Please Select a Video</small>
+                      <br>
+                      <button class="btn btn-success">Submit</button>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <button class="btn btn-success">Submit</button>
                 </div>
             </form>
         </div>
-        <div class="col">
-            <img src="https://www.gifcen.com/wp-content/uploads/2021/07/writing-8.gif">
-        </div>
     </div>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    {% if session['result'] %}
-                            {{session['result']}}
-                    {% else %}
-                            No result found.
-                    {% endif %}
-                    
-                </div>
-            </div>
-        </div>
-    </div>
-
 </div>
 {% endblock %}
