@@ -63,38 +63,6 @@ def register():
 
     return render_template('register.html', title='Sign Up page')
 
-@app.route('/record')
-def record():
-    mpDraw = mp.solutions.drawing_utils
-    mpPose = mp.solutions.pose
-    pose = mpPose.Pose()
- 
-    cap = cv2.VideoCapture('PoseVideos/2.mp4')
-    pTime = 0
-    while True:
-        success, img = cap.read()
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = pose.process(imgRGB)
-        # print(results.pose_landmarks)
-        if results.pose_landmarks:
-            mpDraw.draw_landmarks(img, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
-            for id, lm in enumerate(results.pose_landmarks.landmark):
-                h, w, c = img.shape
-                print(id, lm)
-                cx, cy = int(lm.x * w), int(lm.y * h)
-                cv2.circle(img, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
- 
-        cTime = time.time()
-        fps = 1 / (cTime - pTime)
-        pTime = cTime
- 
-        cv2.putText(img, str(int(fps)), (70, 50), cv2.FONT_HERSHEY_PLAIN, 3,
-                    (255, 0, 0), 3)
- 
-        cv2.imshow("Image", img)
-        cv2.waitKey(1)
-        return render_template('record.html',title='record')
-
 
 @app.route('/forgot',methods=['GET', 'POST'])
 def forgot():
@@ -123,6 +91,51 @@ def before_request():
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method=='POST':
+        current_user.username = request.form.get('username')
+        current_user.about_me = request.form.get('aboutme')
+        db.session.commit()
+        flash('Your changes have been saved.','success')
+        return redirect(url_for('edit_profile'))
+    return render_template('edit_profile.html', title='Edit Profile',user=user)
+
 @app.route('/input')
 def input_page():
     return render_template('input.html',title="Input data")
+
+@app.route('/record')
+def record():
+    if request.method == 'POST':
+        mpDraw = mp.solutions.drawing_utils
+        mpPose = mp.solutions.pose
+        pose = mpPose.Pose()
+    
+        cap = cv2.VideoCapture(request.files)
+        pTime = 0
+        while True:
+            success, img = cap.read()
+            imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            results = pose.process(imgRGB)
+            # print(results.pose_landmarks)
+            if results.pose_landmarks:
+                mpDraw.draw_landmarks(img, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
+                for id, lm in enumerate(results.pose_landmarks.landmark):
+                    h, w, c = img.shape
+                    print(id, lm)
+                    cx, cy = int(lm.x * w), int(lm.y * h)
+                    cv2.circle(img, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
+ 
+            cTime = time.time()
+            fps = 1 / (cTime - pTime)
+            pTime = cTime
+ 
+            cv2.putText(img, str(int(fps)), (70, 50), cv2.FONT_HERSHEY_PLAIN, 3,
+                        (255, 0, 0), 3)
+ 
+            cv2.imshow("Image", img)
+            cv2.waitKey(1)
+        return redirect(request.url)
+    return render_template('record.html',title='record')
