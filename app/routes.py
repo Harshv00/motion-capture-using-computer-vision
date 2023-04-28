@@ -1,10 +1,11 @@
 from flask import render_template,redirect,request,flash,session,url_for
 from flask_login import logout_user,current_user, login_user, login_required
 import cv2
+import os
 import mediapipe as mp
 import time
 from app import app,db
-from app.models import User
+from app.models import User, MyUpload
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from joblib import load
@@ -106,36 +107,65 @@ def edit_profile():
 def input_page():
     return render_template('input.html',title="Input data")
 
-@app.route('/record')
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/record', methods=['GET','POST'])
 def record():
     if request.method == 'POST':
-        mpDraw = mp.solutions.drawing_utils
-        mpPose = mp.solutions.pose
-        pose = mpPose.Pose()
-    
-        cap = cv2.VideoCapture(request.files)
-        pTime = 0
-        while True:
-            success, img = cap.read()
-            imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            results = pose.process(imgRGB)
-            # print(results.pose_landmarks)
-            if results.pose_landmarks:
-                mpDraw.draw_landmarks(img, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
-                for id, lm in enumerate(results.pose_landmarks.landmark):
-                    h, w, c = img.shape
-                    print(id, lm)
-                    cx, cy = int(lm.x * w), int(lm.y * h)
-                    cv2.circle(img, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
+        #print(request.files)
+        if 'file' not in request.files:
+            flash('No file uploaded','danger')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('no file selected','danger')
+            return redirect(request.url)
+        elif file and allowed_file(file.filename):
+            print(file.filename)
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename ))
+            upload = MyUpload(img =f"/static/uploads/{filename}", imgtype = os.path.splitext(file.filename)[1],user_id=current_user.id)
+            db.session.add(upload)
+            db.session.commit()
+            flash('file uploaded and saved','success') 
+            session['uploaded_file'] = f"/static/uploads/{filename}"
+
+            mpDraw = mp.solutions.drawing_utils
+            mpPose = mp.solutions.pose
+            pose = mpPose.Pose()
  
-            cTime = time.time()
-            fps = 1 / (cTime - pTime)
-            pTime = cTime
- 
-            cv2.putText(img, str(int(fps)), (70, 50), cv2.FONT_HERSHEY_PLAIN, 3,
-                        (255, 0, 0), 3)
- 
-            cv2.imshow("Image", img)
-            cv2.waitKey(1)
-        return redirect(request.url)
-    return render_template('record.html',title='record')
+            cap = cv2.VideoCapture(f"app/static/uploads/{filename}")
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            out = cv2.VideoWriter(f'{filename}', fourcc, 25.0, (640, 480))
+            pTime = 0
+            while True:
+                success, img = cap.read()
+                if not success:
+                    break
+                imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                results = pose.process(imgRGB)
+                # print(results.pose_landmarks)
+                if results.pose_landmarks:
+                    mpDraw.draw_landmarks(img, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
+                    for id, lm in enumerate(results.pose_landmarks.landmark):
+                        h, w, c = img.shape
+                        print(id, lm)
+                        cx, cy = int(lm.x * w), int(lm.y * h)
+                        cv2.circle(img, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
+                cTime = time.time()
+                fps = 1 / (cTime - pTime)
+                pTime = cTime
+
+                cv2.putText(img, str(int(fps)), (70, 50), cv2.FONT_HERSHEY_PLAIN, 3,(255, 0, 0), 3)
+                cv2.imshow("Image", img)
+                cv2.waitKey(1)
+            cap.release()
+            out.release()
+            cv2.destroyAllWindows()
+                       
+            return redirect(request.url)
+        else:
+            flash('wrong file selected, only PNG and JPG images allowed','danger')
+            return redirect(request.url)
+    return render_template('record.html',title='upload new Image')

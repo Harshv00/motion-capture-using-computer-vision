@@ -22,6 +22,14 @@
     <div class="row">
         <div class="col-md-12">
             {% include "notify.html" %}
+            {% if filename %}
+        	<div style="margin: 10px auto;">
+		        <video autoplay="autoplay" controls="controls" preload="preload">
+		        	<source src="{{ url_for('display_video', filename=filename) }}" type="video/mp4"></source>
+		        </video>
+	        </div>
+            {% endif %}
+
             <form class="card" method="post" enctype="multipart/form-data">
                 <div class="card-header">
                     <p class="lead" style="font-size: 50px; text-align: center;"><b>Upload a Video</b></p>
@@ -32,12 +40,15 @@
                       <label for="imageId" style="font-size: xx-large;">Upload Media</label>
                       <input type="file" name="file" class="form-control-file" name="imageId" id="imageId" placeholder="browse the image" aria-describedby="imageHelp" style="text-align: center;">
                       <small id="imageHelp" class="form-text text-muted">Please Select a Video</small>
-                      <br>
-                      <button class="btn btn-success">Submit</button>
+                      
                     </div>
+                </div>
+                <div>
+                    <button class="btn btn-success">Submit</button>
                 </div>
             </form>
         </div>
     </div>
+    
 </div>
 {% endblock %}
